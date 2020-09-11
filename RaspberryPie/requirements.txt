@@ -1,0 +1,7 @@
+requests==2.22.0
+numpy==1.18.4
+Adafruit_DHT==1.4.0
+dropbox==10.4.1
+html2text==2020.1.16
+picamera==1.13
+RPi.GPIO==0.7.0
