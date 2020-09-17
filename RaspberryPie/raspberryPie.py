@@ -19,6 +19,9 @@ import Adafruit_DHT
 from picamera import PiCamera
 import RPi.GPIO as GPIO
 
+# imports from project
+import RaspberryPie.tasks
+
 
 config = configparser.RawConfigParser()
 config.read("config.cfg") # edit this file for your specific configuration
@@ -105,6 +108,7 @@ class MajGenApiTelecom:
             MajGenApiTelecom.delete_mail(id)
         
     def __init__(self, email_function, dropbox_function):
+        # using functions so in future, the storing can "easily" made more secure (not always stored in memory hopefully)
         self.email_function = email_function
         self.dropbox_function = dropbox_function
         self.mail_config = config["Mail"]
@@ -209,11 +213,13 @@ class MajGenGPIOController:
             GPIO.cleanup()
 
         def close(self):
+            self.kill()
             GPIO.output(self.pinClose, GPIO.LOW)
             GPIO.output(self.pinOpen, GPIO.HIGH)
             captScribe.info("GPIO set to closing", "MajGenGPIOControl.close")
 
         def open(self):
+            self.kill()
             GPIO.output(self.pinClose, GPIO.HIGH)
             GPIO.output(self.pinOpen, GPIO.LOW)
             captScribe.info("GPIO set to opening", "MajGenGPIOControl.open")
@@ -221,6 +227,7 @@ class MajGenGPIOController:
         def kill(self):
             GPIO.output(self.pinClose, GPIO.HIGH)
             GPIO.output(self.pinOpen, GPIO.HIGH)
+            time.sleep(.5) # waiting, so relay definetly has switched
             captScribe.info("GPIO switched off", "MajGenGPIOControl.kill")
 
         def delayedSwitchOff(self):
@@ -254,13 +261,6 @@ class LtGenDataCollector:
                 self._archive(event, {time: data})
 
 class LtGenInterpreter:
-    class Task:
-        def __init__(self, function, check):
-            self.function = function
-            self.check = check
-        def test(self, email: MajGenApiTelecom.Telegram):
-            return self.check
-
     def __init__(self, tasks: list, communicator: MajGenApiTelecom):
         self.tasks = tasks
         self.communicator = communicator
@@ -301,6 +301,14 @@ class GenScheduler:
         reboot_str = lambda: " -r" if reboot else ""
         os.system("shutdown{} 0".format(reboot_str()))
 
+def init():
+    lib = {}
+    captScribe = CaptScribe(config["File Locations"]["logfile_info"], config["File Locations"]["logfile_error"])
+    majGenObserver = MajGenObserver()
+    majGenApiTelecom = MajGenApiTelecom(lambda: {"address": config["Secrets"]["emailaddress"], "password": config["Secrets"]["emailpassword"]}, lambda: config["Secrets"]["dropboxtoken"])
+    majGenGPIOController = MajGenGPIOController(config["Hardware"]["pinopen"], config["Hardware"]["pinclose"], config["Timing"]["gpioswitchoff"])
+    ltGenDataCollector = LtGenDataCollector({"air": majGenObserver.get_sensorData(), "picture": majGenObserver.get_picture()}, lib)
+    ltGenInterpreter = LtGenInterpreter(RaspberryPie.tasks.tasks, majGenApiTelecom)
 
-captScribe = CaptScribe("", "")
-majGenGPIOController = MajGenGPIOController(0, 0, 0)
+
+init()
