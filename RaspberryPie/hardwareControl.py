@@ -10,8 +10,8 @@ import RPi.GPIO as GPIO
 # imports from project
 from RaspberryPie.config import config
 from RaspberryPie.logger import captScribe
+from RaspberryPie.dataHandling import bGenSecretary
 
-lib = {}
 
 class MajGenGPIOController:
         def __init__(self, pin_open, pin_close, delta_switchOff):
@@ -60,16 +60,19 @@ class MajGenObserver:
         def __str__(self):
                 return str(self.captured)
     
-    def get_picture(self):
-        camera = PiCamera()
-        majGensDictatingMachine = self.DictatingMachine()
-        camera.start_preview()
-        time.sleep(5) # letting camera adjust to environment (exposure and wb)
-        camera.capture(majGensDictatingMachine)
-        camera.stop_preview()
-        return str(majGensDictatingMachine)
+    def __init__(self, schedule_timing):
+        self.schedule_timing = schedule_timing
     
-    def get_sensorData(self):
+    def get_schedule(self):
+        return self.schedule_timing
+        
+class MajGenAirChecker(MajGenObserver):
+    def __init__(self, schedule_timing=None):
+        if not schedule_timing:
+            schedule_timing = config["Timing"]["environmentdelta"]
+        super().__init__(schedule_timing)
+
+    def execute():
         sensor = Adafruit_DHT.DHT22
         pin = int(config["Hardware"]["dhtpin"])
         humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
@@ -78,32 +81,43 @@ class MajGenObserver:
             humidity, temperature = (-1, -274) # if you need any numbers, why don't take impossible ones, to show error
         return humidity, temperature
 
-class LtGenDataCollector:
-    def __init__(self, functions: dict, library, schedule_timing=None):
-        self.functions = functions
+class MajGenVisualObserver(MajGenObserver):
+    def __init__(self, schedule_timing=None):
         if not schedule_timing:
-            self.schedule_timing = {"air": config["Timing"]["environmentdelta"], "camera": config["Timing"]["picturedelta"]}
-        else:
-            self.schedule_timing = schedule_timing
-        self.schedule = {"air": datetime.datetime.now(), "camera": datetime.datetime.now()}
-        self.library = library
-        
-    def get_schedule(self):
-        arr = []
-        for event in self.schedule_timing:
-            arr.append(self.schedule[event])
-        return arr
+            schedule_timing = config["Timing"]["picturedelta"]
+        super().__init__(schedule_timing)
 
-    def _archive(self, place, data):
-        pass
+    def execute():
+        camera = PiCamera()
+        majGensDictatingMachine = super.DictatingMachine()
+        camera.start_preview()
+        time.sleep(5) # letting camera adjust to environment (exposure and wb)
+        camera.capture(majGensDictatingMachine, format="jpeg")
+        camera.stop_preview()
+        return str(majGensDictatingMachine)
 
-    def collect(self, function_names: list):
-        time = datetime.datetime.now()
-        for function in function_names:
-            data = self.functions[function]()
-            self._archive(function, {time: data})
+class MajGenAirRecoder(MajGenAirChecker):
+    def __init__(self, dataCollector, schedule_timing=None):
+        self.dataCollector = dataCollector
+        super().__init__(schedule_timing=schedule_timing)
+    
+    def execute(self):
+        data = super.execute()
+        self.dataCollector.recordeAir({"air": (str(datetime.datetime.now()), data)})
+
+class MajGenVisualRecoder(MajGenVisualObserver):
+    def __init__(self, dataCollector, schedule_timing=None):
+        self.dataCollector = dataCollector
+        super().__init__(schedule_timing=schedule_timing)
+    
+    def execute(self):
+        data = super.execute()
+        self.dataCollector.recordePicture({"picture": (str(datetime.datetime.now()), data)})
 
 
-majGenObserver = MajGenObserver()
+
 majGenGPIOController = MajGenGPIOController(config["Hardware"]["pinopen"], config["Hardware"]["pinclose"], config["Timing"]["gpioswitchoff"])
-ltGenDataCollector = LtGenDataCollector({"air": majGenObserver.get_sensorData, "picture": majGenObserver.get_picture}, lib)
+majGenVisualObserver = MajGenVisualObserver()
+majGenAirChecker = MajGenAirChecker()
+majGenAirRecoder = MajGenAirRecoder(bGenSecretary)
+majGenVisualRecoder = MajGenVisualRecoder(bGenSecretary)

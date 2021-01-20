@@ -24,7 +24,6 @@ class MajGenApiCom:
             MajGenApiCom.delete_mail(id)
         
     def __init__(self, email, dropbox):
-        # using functions so in future, the storing can "easily" made more secure (not always stored in memory hopefully)
         self.email = email
         self.dropbox = dropbox
         self.mail_config = config["Mail"]

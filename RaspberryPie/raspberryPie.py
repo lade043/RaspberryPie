@@ -10,10 +10,11 @@ Capt << BGen << MajGen << LtGen << Gen
 """
 # imports from project
 from RaspberryPie.tasks import Task
-from RaspberryPie.hardwareControl import majGenObserver, majGenGPIOController, ltGenDataCollector
+from RaspberryPie.hardwareControl import majGenGPIOController, majGenVisualRecorder, majGenAirRecoder
 from RaspberryPie.config import config
 from RaspberryPie.logger import captScribe
 from RaspberryPie.internetHandling import majGenApiCom, MajGenApiCom
+
 
 ltGenInterpreter, genScheduler = None
 
@@ -22,10 +23,17 @@ tasks = [
     Task(majGenGPIOController.close, lambda msg: 1 if ("zu" == msg.subject.lower() or "close" == msg.subject.lower()) else 0)
 ]
 
+
 class LtGenInterpreter:
-    def __init__(self, tasks: list, communicator: MajGenApiCom):
+    def __init__(self, tasks: list, communicator: MajGenApiCom, schedule_timing=None):
+        if not schedule_timing:
+            schedule_timing = config["Timing"]["maildelta"]
+        self.schedule_timing
         self.tasks = tasks
         self.communicator = communicator
+    
+    def get_schedule(self):
+        return self.schedule_timing
     
     def execute(self):
         messages = self.communicator.get_emails()
@@ -67,7 +75,23 @@ class GenScheduler:
 def init():
     global ltGenInterpreter, genScheduler
     ltGenInterpreter = LtGenInterpreter(tasks, majGenApiCom)
-    genScheduler = GenScheduler((majGenApiCom, ltGenDataCollector))
+    genScheduler = GenScheduler((ltGenInterpreter, majGenVisualRecorder, majGenAirRecoder))
+
+
+def main():
+    suspend_shutdown = False
+    if genScheduler is GenScheduler:
+        try:
+            genScheduler.execute()
+        except Exception as e:
+            captScribe.critical(str(e), "main()")
+            if e is KeyboardInterrupt:
+                suspend_shutdown = True
+        finally:
+            if not suspend_shutdown:
+                genScheduler.initiate_shutdown()
+    print("The programm has finished. For more information see the log files.")
 
 
 init()
+main()

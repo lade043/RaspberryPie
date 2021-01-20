@@ -1,3 +1,11 @@
 {
-    "cSpell.enabled": false
+    "cSpell.enabled": false,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "database",
+            "database": "${workspaceFolder:RaspberryPie}/RaspberryPie/database.db"
+        }
+    ]
 }

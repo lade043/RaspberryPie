@@ -2,13 +2,14 @@
 import logging
 from RaspberryPie.config import config
 
+
 class CaptScribe:
     def __init__(self, log_info, log_error):
         self.logfile_info = log_info
         self.logfile_error = log_error
         self.loggers = [logging.getLogger("log_info"), logging.getLogger("log_error")]
         self.formatters = [logging.Formatter("%(asctime)s : %(level), %(message)s"), logging.Formatter("%(asctime)s : %(message)s: %(sinfo)")]
-        self.handlers = [logging.FileHandler(self.logfile_info, mode='w'), logging.FileHandler(self.logfile_error, mode='w')]
+        self.handlers = [logging.TimedRotatingFileHandler(self.logfile_info, when='midnight', interval=1), logging.TimedRotatingFileHandler(self.logfile_error, when='midnight', interval=1)]
         for i, handler in enumerate(self.handlers):
             handler.setFormatter(self.formatters[i])
         
@@ -37,5 +38,6 @@ class CaptScribe:
     def debug(self, msg, func=""):
         for logger in self.loggers:
             logger.debug(func.upper() + ": " + msg)
+
 
 captScribe = CaptScribe(config["File Locations"]["logfile_info"], config["File Locations"]["logfile_error"])
