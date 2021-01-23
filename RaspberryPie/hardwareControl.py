@@ -58,7 +58,7 @@ class MajGenObserver:
         def write(self, text):
             self.captured = text
         def __str__(self):
-                return str(self.captured)
+                return self.captured
     
     def __init__(self, schedule_timing):
         self.schedule_timing = schedule_timing

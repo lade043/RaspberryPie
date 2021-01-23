@@ -19,11 +19,11 @@
     <h2>Weather Forecast</h2>
     <canvas id="ForecastChart" width="400" height="200"></canvas>
     <h2>Third party weather providers</h2>
-    {% for image in urls %}
+    {% for image in weather_urls %}
         <img src="{{ image }}">
     <h2>Webcam</h2>
     <a id="PictureTime">{{ PictureTime }}</a><br>
-    <img id="Webcam" src="/latest.jpg">
+    <img id="Webcam" src="data:image/jpg;base64,{{ picture }}">
 
 </body>
 </html>
