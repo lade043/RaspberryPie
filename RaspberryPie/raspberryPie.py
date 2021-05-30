@@ -9,25 +9,29 @@ All classes are ranked in their hierarchy, like this (ranks of the US Marines):
 Capt << BGen << MajGen << LtGen << Gen
 """
 # imports from project
-from RaspberryPie.tasks import Task
-from RaspberryPie.hardwareControl import majGenGPIOController, majGenVisualRecorder, majGenAirRecoder
-from RaspberryPie.config import config
-from RaspberryPie.logger import captScribe
-from RaspberryPie.internetHandling import majGenApiCom, MajGenApiCom
+import RaspberryPie.tasks as tasks
+import RaspberryPie.hardwareControl as hardwareControl
+import RaspberryPie.config as config
+import RaspberryPie.logger as logger
+import RaspberryPie.internetHandling as internetHandling
+
+captScribe = logger.CaptScribe(config.config.config["File Locations"]["logfile_info"], config.config.config["File Locations"]["logfile_error"])
+internetHandling._set_captScribe(captScribe)
+hardwareControl._set_captScribe(captScribe)
 
 
 ltGenInterpreter, genScheduler = None
 
 tasks = [
-    Task(majGenGPIOController.open, lambda msg: 1 if ("auf" == msg.subject.lower() or "open" == msg.subject.lower()) else 0),
-    Task(majGenGPIOController.close, lambda msg: 1 if ("zu" == msg.subject.lower() or "close" == msg.subject.lower()) else 0)
+    tasks.Task(hardwareControl.majGenGPIOController.open, lambda msg: 1 if ("auf" == msg.subject.lower() or "open" == msg.subject.lower()) else 0),
+    tasks.Task(hardwareControl.majGenGPIOController.close, lambda msg: 1 if ("zu" == msg.subject.lower() or "close" == msg.subject.lower()) else 0)
 ]
 
 
 class LtGenInterpreter:
-    def __init__(self, tasks: list, communicator: MajGenApiCom, schedule_timing=None):
+    def __init__(self, tasks: list, communicator: internetHandling.MajGenApiCom, schedule_timing=None):
         if not schedule_timing:
-            schedule_timing = config["Timing"]["maildelta"]
+            schedule_timing = config.config.config["Timing"]["maildelta"]
         self.schedule_timing
         self.tasks = tasks
         self.communicator = communicator
@@ -67,15 +71,15 @@ class GenScheduler:
                 captScribe.critical("A not expected error occured: {}".format(str(e)), "GenScheduler.execute")
 
     def initiate_shutdown(self, reboot=True):
-        majGenGPIOController.finalMission()
+        hardwareControl.majGenGPIOController.finalMission()
         reboot_str = lambda: " -r" if reboot else ""
         os.system("shutdown{} 0".format(reboot_str()))
 
 
 def init():
     global ltGenInterpreter, genScheduler
-    ltGenInterpreter = LtGenInterpreter(tasks, majGenApiCom)
-    genScheduler = GenScheduler((ltGenInterpreter, majGenVisualRecorder, majGenAirRecoder))
+    ltGenInterpreter = LtGenInterpreter(tasks, internetHandling.majGenApiCom)
+    genScheduler = GenScheduler((ltGenInterpreter, hardwareControl.majGenVisualRecorder, hardwareControl.majGenAirRecoder))
 
 
 def main():

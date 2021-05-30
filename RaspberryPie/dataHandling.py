@@ -4,9 +4,13 @@ import sqlite3
 import base64
 
 # imports from Project
-from RaspberryPie.logger import captScribe
-from RaspberryPie.config import config
+import RaspberryPie.config as config
 
+captScribe = None
+
+def _set_captScribe(_captScribe):
+    global captScribe
+    captScribe = _captScribe
 
 class BGenSecretary:
     def __init__(self, database_path, image_path):
@@ -27,6 +31,9 @@ class BGenSecretary:
                 cursor.execute(command)
                 captScribe.info("Inserted data into table '{}' of database".format(typ), "BGenSecretary._record")
             connection.commit()
+            
+            with open(config.config["FileLocations"]["lastChangeFile"], 'w') as f:
+                f.write(str(int(datetime.datetime.now().timestamp())))
         except sqlite3.Error as e:
             captScribe.error(str(e), "BGenSecretary._record")
         finally:
@@ -94,4 +101,4 @@ class BGenSecretary:
             return {"unix_time": [entry[0] for entry in entries], "time_string": [entry[1] for entry in entries], "picture": [entry[2] for entry in entries]}
 
 
-bGenSecretary = BGenSecretary(config["File Locations"]["database_file"], config["File Locations"],["image_path"])
+bGenSecretary = BGenSecretary(config.config["File Locations"]["database_file"], config.config["File Locations"],["image_path"])

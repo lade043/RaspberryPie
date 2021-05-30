@@ -7,8 +7,13 @@ import email
 import datetime
 
 
-from RaspberryPie.logger import captScribe
-from RaspberryPie.config import config
+import RaspberryPie.config as config
+
+captScribe = None
+
+def _set_captScribe(_captScribe):
+    global captScribe
+    captScribe = _captScribe
 
 class MajGenApiCom:
     class Telegram:
@@ -26,7 +31,7 @@ class MajGenApiCom:
     def __init__(self, email, dropbox):
         self.email = email
         self.dropbox = dropbox
-        self.mail_config = config["Mail"]
+        self.mail_config = config.config["Mail"]
 
     def upload_dropbox(self, filename, content):
         try:
@@ -118,4 +123,4 @@ class MajGenApiCom:
                 captScribe.error("Logout of imap failed.", "MajGenApiCom.delete_mail")
 
                 
-majGenApiCom = MajGenApiCom({"address": config["Secrets"]["emailaddress"], "password": config["Secrets"]["emailpassword"]}, config["Secrets"]["dropboxtoken"])
+majGenApiCom = MajGenApiCom({"address": config.config["Secrets"]["emailaddress"], "password": config.config["Secrets"]["emailpassword"]}, config.config["Secrets"]["dropboxtoken"])

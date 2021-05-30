@@ -1,6 +1,5 @@
 # general imports
 import logging
-from RaspberryPie.config import config
 
 
 class CaptScribe:
@@ -38,6 +37,3 @@ class CaptScribe:
     def debug(self, msg, func=""):
         for logger in self.loggers:
             logger.debug(func.upper() + ": " + msg)
-
-
-captScribe = CaptScribe(config["File Locations"]["logfile_info"], config["File Locations"]["logfile_error"])

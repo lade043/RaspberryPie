@@ -1,5 +1,6 @@
 from flask import Flask, render_template, make_response
 import json
+import signal
 
 import RaspberryPie.flaskAddons as fa
 
@@ -54,3 +55,7 @@ def ininitisteGPIO(state):
 @app.route("/initiate/shutdown/")
 def initiateShutdown():
     pass
+
+@app.route("/lastChange/")
+def lastChange():
+    return str(fa.lastChange())

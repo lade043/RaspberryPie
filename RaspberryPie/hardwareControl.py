@@ -1,4 +1,5 @@
 #general imports
+from RaspberryPie.logger import CaptScribe
 import time
 import datetime
 
@@ -8,9 +9,15 @@ from picamera import PiCamera
 import RPi.GPIO as GPIO
 
 # imports from project
-from RaspberryPie.config import config
-from RaspberryPie.logger import captScribe
-from RaspberryPie.dataHandling import bGenSecretary
+import RaspberryPie.config as config
+import RaspberryPie.dataHandling as dataHandling 
+
+captScribe = None
+
+def _set_captScribe(_captScribe):
+    global captScribe
+    captScribe = _captScribe
+    dataHandling._set_captScribe(_captScribe)
 
 
 class MajGenGPIOController:
@@ -69,12 +76,12 @@ class MajGenObserver:
 class MajGenAirChecker(MajGenObserver):
     def __init__(self, schedule_timing=None):
         if not schedule_timing:
-            schedule_timing = config["Timing"]["environmentdelta"]
+            schedule_timing = config.config["Timing"]["environmentdelta"]
         super().__init__(schedule_timing)
 
     def execute():
         sensor = Adafruit_DHT.DHT22
-        pin = int(config["Hardware"]["dhtpin"])
+        pin = int(config.config["Hardware"]["dhtpin"])
         humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
         if humidity is None or temperature is None:
             captScribe.warning("Error while reading DHT22 sensor. The received values are: Humidity: {}, Temperature: {}".format(str(humidity), str(temperature)), "MajGenObserver.get_sensorData")
@@ -84,7 +91,7 @@ class MajGenAirChecker(MajGenObserver):
 class MajGenVisualObserver(MajGenObserver):
     def __init__(self, schedule_timing=None):
         if not schedule_timing:
-            schedule_timing = config["Timing"]["picturedelta"]
+            schedule_timing = config.config["Timing"]["picturedelta"]
         super().__init__(schedule_timing)
 
     def execute():
@@ -116,8 +123,8 @@ class MajGenVisualRecoder(MajGenVisualObserver):
 
 
 
-majGenGPIOController = MajGenGPIOController(config["Hardware"]["pinopen"], config["Hardware"]["pinclose"], config["Timing"]["gpioswitchoff"])
+majGenGPIOController = MajGenGPIOController(config.config["Hardware"]["pinopen"], config.config["Hardware"]["pinclose"], config.config["Timing"]["gpioswitchoff"])
 majGenVisualObserver = MajGenVisualObserver()
 majGenAirChecker = MajGenAirChecker()
-majGenAirRecoder = MajGenAirRecoder(bGenSecretary)
-majGenVisualRecoder = MajGenVisualRecoder(bGenSecretary)
+majGenAirRecoder = MajGenAirRecoder(dataHandling.bGenSecretary)
+majGenVisualRecoder = MajGenVisualRecoder(dataHandling.bGenSecretary)

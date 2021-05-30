@@ -1,6 +1,6 @@
 from RaspberryPie.internetHandling import MajGenApiCom
 
-class Task:
+class tasks.Task:
         def __init__(self, function, check):
             self.function = function
             self.check = check
