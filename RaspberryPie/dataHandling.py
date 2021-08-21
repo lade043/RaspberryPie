@@ -101,4 +101,4 @@ class BGenSecretary:
             return {"unix_time": [entry[0] for entry in entries], "time_string": [entry[1] for entry in entries], "picture": [entry[2] for entry in entries]}
 
 
-bGenSecretary = BGenSecretary(config.config["File Locations"]["database_file"], config.config["File Locations"],["image_path"])
+bGenSecretary = BGenSecretary(config.config["File Locations"]["database_file"], config.config["File Locations"]["image_path"])

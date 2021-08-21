@@ -15,12 +15,12 @@ import RaspberryPie.config as config
 import RaspberryPie.logger as logger
 import RaspberryPie.internetHandling as internetHandling
 
-captScribe = logger.CaptScribe(config.config.config["File Locations"]["logfile_info"], config.config.config["File Locations"]["logfile_error"])
+captScribe = logger.CaptScribe(config.config["File Locations"]["logfile_info"], config.config["File Locations"]["logfile_error"])
 internetHandling._set_captScribe(captScribe)
 hardwareControl._set_captScribe(captScribe)
 
 
-ltGenInterpreter, genScheduler = None
+ltGenInterpreter, genScheduler = None, None
 
 tasks = [
     tasks.Task(hardwareControl.majGenGPIOController.open, lambda msg: 1 if ("auf" == msg.subject.lower() or "open" == msg.subject.lower()) else 0),
@@ -31,8 +31,8 @@ tasks = [
 class LtGenInterpreter:
     def __init__(self, tasks: list, communicator: internetHandling.MajGenApiCom, schedule_timing=None):
         if not schedule_timing:
-            schedule_timing = config.config.config["Timing"]["maildelta"]
-        self.schedule_timing
+            schedule_timing = config.config["Timing"]["maildelta"]
+        self.schedule_timing = schedule_timing
         self.tasks = tasks
         self.communicator = communicator
     
@@ -52,8 +52,8 @@ class GenScheduler:
         self.schedule = {}
         self.schedule_delta = {}
         for subordinate in self.subordinates:
-            self.schedule[subordinate] = list(datetime.datetime.now())
-            self.schedule_delta[subordinate] = list(subordinate.get_schedule())
+            self.schedule[subordinate] = [datetime.datetime.now()]
+            self.schedule_delta[subordinate] = [subordinate.get_schedule()]
         self.time = datetime.datetime.now
 
     def execute(self):
@@ -62,7 +62,7 @@ class GenScheduler:
                 for subordinate in self.schedule:
                     if self.schedule[subordinate][np.argmin(self.schedule[subordinate])] <= self.time():
                         subordinate.execute()
-                        self.schedule[subordinate][np.argmin(self.schedule[subordinate])] += self.schedule_delta[subordinate][np.argmin(self.schedule[subordinate])]
+                        self.schedule[subordinate][np.argmin(self.schedule[subordinate])] += datetime.timedelta(seconds=float(self.schedule_delta[subordinate][np.argmin(self.schedule[subordinate])]))
                 
                 time_list = lambda: [self.schedule[subordinate][np.argmin(self.schedule[subordinate])] for subordinate in self.schedule]
                 sleep_duration = time_list()[np.argmin(time_list())]
@@ -84,10 +84,11 @@ def init():
 
 def main():
     suspend_shutdown = False
-    if genScheduler is GenScheduler:
+    if type(genScheduler) is GenScheduler:
         try:
             genScheduler.execute()
         except Exception as e:
+            print(e)
             captScribe.critical(str(e), "main()")
             if e is KeyboardInterrupt:
                 suspend_shutdown = True

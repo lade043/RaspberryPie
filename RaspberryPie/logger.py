@@ -1,6 +1,6 @@
 # general imports
 import logging
-
+import logging.handlers
 
 class CaptScribe:
     def __init__(self, log_info, log_error):
@@ -8,15 +8,17 @@ class CaptScribe:
         self.logfile_error = log_error
         self.loggers = [logging.getLogger("log_info"), logging.getLogger("log_error")]
         self.formatters = [logging.Formatter("%(asctime)s : %(level), %(message)s"), logging.Formatter("%(asctime)s : %(message)s: %(sinfo)")]
-        self.handlers = [logging.TimedRotatingFileHandler(self.logfile_info, when='midnight', interval=1), logging.TimedRotatingFileHandler(self.logfile_error, when='midnight', interval=1)]
+        self.handlers = [logging.handlers.TimedRotatingFileHandler(self.logfile_info, when='midnight', interval=1), logging.handlers.TimedRotatingFileHandler(self.logfile_error, when='midnight', interval=1)]
         for i, handler in enumerate(self.handlers):
             handler.setFormatter(self.formatters[i])
         
-        for i, logger in self.loggers:
+        for i, logger in enumerate(self.loggers):
             logger.addHandler(self.handlers[i])
         
         self.loggers[0].level = logging.INFO
         self.loggers[1].level = logging.ERROR
+
+        self.loggers[0].addHandler(logging.StreamHandler())
         
     def critical(self, msg, func=""):
         for logger in self.loggers:

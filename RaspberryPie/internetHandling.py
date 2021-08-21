@@ -94,6 +94,8 @@ class MajGenApiCom:
                     imap.logout()
             except:
                 captScribe.error("Logout of imap failed.", "MajGenApiCom.get_emails")
+        
+        return mail_box
 
     def delete_mail(self, id):
         imap = None

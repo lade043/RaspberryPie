@@ -12,6 +12,8 @@ import RPi.GPIO as GPIO
 import RaspberryPie.config as config
 import RaspberryPie.dataHandling as dataHandling 
 
+GPIO.setwarnings(False)
+
 captScribe = None
 
 def _set_captScribe(_captScribe):
@@ -22,9 +24,9 @@ def _set_captScribe(_captScribe):
 
 class MajGenGPIOController:
         def __init__(self, pin_open, pin_close, delta_switchOff):
-            self.pinOpen = pin_open
-            self.pinClose = pin_close
-            self.deltaOff = delta_switchOff
+            self.pinOpen = int(pin_open)
+            self.pinClose = int(pin_close)
+            self.deltaOff = int(delta_switchOff)
 
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.pinOpen, GPIO.OUT)
@@ -68,7 +70,7 @@ class MajGenObserver:
                 return self.captured
     
     def __init__(self, schedule_timing):
-        self.schedule_timing = schedule_timing
+        self.schedule_timing = int(schedule_timing)
     
     def get_schedule(self):
         return self.schedule_timing
@@ -79,7 +81,7 @@ class MajGenAirChecker(MajGenObserver):
             schedule_timing = config.config["Timing"]["environmentdelta"]
         super().__init__(schedule_timing)
 
-    def execute():
+    def execute(self):
         sensor = Adafruit_DHT.DHT22
         pin = int(config.config["Hardware"]["dhtpin"])
         humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
@@ -94,9 +96,9 @@ class MajGenVisualObserver(MajGenObserver):
             schedule_timing = config.config["Timing"]["picturedelta"]
         super().__init__(schedule_timing)
 
-    def execute():
+    def execute(self):
         camera = PiCamera()
-        majGensDictatingMachine = super.DictatingMachine()
+        majGensDictatingMachine = super().DictatingMachine()
         camera.start_preview()
         time.sleep(5) # letting camera adjust to environment (exposure and wb)
         camera.capture(majGensDictatingMachine, format="jpeg")
@@ -109,7 +111,7 @@ class MajGenAirRecoder(MajGenAirChecker):
         super().__init__(schedule_timing=schedule_timing)
     
     def execute(self):
-        data = super.execute()
+        data = super().execute()
         self.dataCollector.recordeAir({"air": (str(datetime.datetime.now()), data)})
 
 class MajGenVisualRecoder(MajGenVisualObserver):
@@ -118,7 +120,7 @@ class MajGenVisualRecoder(MajGenVisualObserver):
         super().__init__(schedule_timing=schedule_timing)
     
     def execute(self):
-        data = super.execute()
+        data = super().execute()
         self.dataCollector.recordePicture({"picture": (str(datetime.datetime.now()), data)})
 
 
@@ -127,4 +129,4 @@ majGenGPIOController = MajGenGPIOController(config.config["Hardware"]["pinopen"]
 majGenVisualObserver = MajGenVisualObserver()
 majGenAirChecker = MajGenAirChecker()
 majGenAirRecoder = MajGenAirRecoder(dataHandling.bGenSecretary)
-majGenVisualRecoder = MajGenVisualRecoder(dataHandling.bGenSecretary)
+majGenVisualRecorder = MajGenVisualRecoder(dataHandling.bGenSecretary)
